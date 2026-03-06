@@ -3,6 +3,7 @@ import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Dashboard from "./pages/Dashboard";
+import Budget from "./pages/budget"; // Import your new file
 
 // Protected Route Wrapper
 const ProtectedRoute = ({ children }) => {
@@ -37,31 +38,17 @@ function App() {
         />
         
         {/* Auth Routes */}
-        <Route 
-          path="/login" 
-          element={
-            <PublicRoute>
-              <Login />
-            </PublicRoute>
-          } 
-        />
-        <Route 
-          path="/signup" 
-          element={
-            <PublicRoute>
-              <Signup />
-            </PublicRoute>
-          } 
-        />
+        <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
+        <Route path="/signup" element={<PublicRoute><Signup /></PublicRoute>} />
         
-        {/* Protected Dashboard Route */}
+        {/* Protected Routes */}
         <Route 
           path="/dashboard" 
-          element={
-            <ProtectedRoute>
-              <Dashboard />
-            </ProtectedRoute>
-          } 
+          element={<ProtectedRoute><Dashboard /></ProtectedRoute>} 
+        />
+        <Route 
+          path="/budget" 
+          element={<ProtectedRoute><Budget /></ProtectedRoute>} 
         />
       </Routes>
     </Router>

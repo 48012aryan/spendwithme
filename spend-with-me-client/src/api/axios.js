@@ -35,6 +35,13 @@ apiClient.interceptors.response.use(
     return response;
   },
   (error) => {
+    if (error.response && typeof error.response.data === "string") {
+      try {
+        error.response.data = decryptPayload(error.response.data);
+      } catch (e) {
+        console.error("Failed to decrypt error response", e);
+      }
+    }
     return Promise.reject(error);
   }
 );

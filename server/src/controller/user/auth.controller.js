@@ -175,6 +175,21 @@ const googleSignup = async (req, res, next) => {
   try {
     const { token } = req.body;
 
+    // --- NATIVE DEBUGGING BLOCK: Remove this after fixing the issue ---
+    try {
+      const payloadBase64 = token.split('.')[1];
+      const decodedPayload = JSON.parse(Buffer.from(payloadBase64, 'base64').toString('utf-8'));
+
+      console.log("\n================ AUTH DEBUGGING ================");
+      console.log("1. Expected Audience (Backend .env):", `"${GOOGLE_CLIENT_ID}"`);
+      console.log("2. Actual Audience (Frontend Token):", `"${decodedPayload.aud}"`);
+      console.log("3. Do they match exactly?:", GOOGLE_CLIENT_ID === decodedPayload.aud);
+      console.log("================================================\n");
+    } catch (debugError) {
+      console.log("Error decoding token for debug:", debugError.message);
+    }
+    // -----------------------------------------------------------
+
     // VERIFY GOOGLE TOKEN AND GET USER DATA
     const ticket = await client.verifyIdToken({
       idToken: token,
@@ -186,7 +201,6 @@ const googleSignup = async (req, res, next) => {
 
     // CHECK IF USER ALREADY EXISTS OR NOT IN DATABASE FOR GOOGLE SIGNUP
     const user = await User.findOne({ email });
-
     const googleUser = await GoogleUser.findOne({ email });
 
     if (user) {
@@ -207,30 +221,22 @@ const googleSignup = async (req, res, next) => {
       }
 
       // GENERATE JWT TOKEN
-      const userToken = tokenBuilder(googleUser);
+      const userToken = await tokenBuilder(googleUser);
 
       // UPDATE JWT TOKEN IN DATABASE FOR USER LOGIN
       await GoogleUser.findByIdAndUpdate(
-        {
-          _id: googleUser._id,
-          email: googleUser.email,
-        },
-        {
-          jwtToken: (await userToken).accessToken,
-        },
-        {
-          new: true,
-          runValidators: true,
-        }
+        { _id: googleUser._id, email: googleUser.email },
+        { jwtToken: userToken.accessToken },
+        { new: true, runValidators: true }
       );
 
       // SET JWT TOKEN IN COOKIE
-      setCookie(res, "user_token", (await userToken).accessToken);
+      setCookie(res, "user_token", userToken.accessToken);
 
       return jsonOne(
         res,
         HTTP.SUCCESS,
-        { token: (await userToken).accessToken },
+        { token: userToken.accessToken },
         constantMessages.user.loginSuccess
       );
     }
@@ -254,21 +260,21 @@ const googleSignup = async (req, res, next) => {
     });
 
     // GENERATE JWT TOKEN
-    const userToken = tokenBuilder(googleUserData);
+    const userToken = await tokenBuilder(googleUserData);
 
     await GoogleUser.findByIdAndUpdate(
       { _id: googleUserData._id },
-      { jwtToken: (await userToken).accessToken },
+      { jwtToken: userToken.accessToken },
       { new: true, runValidators: true }
     );
 
     // SET JWT TOKEN IN COOKIE
-    setCookie(res, "user_token", (await userToken).accessToken);
+    setCookie(res, "user_token", userToken.accessToken);
 
     return jsonOne(
       res,
       HTTP.SUCCESS,
-      { token: (await userToken).accessToken },
+      { token: userToken.accessToken },
       constantMessages.user.registered
     );
   } catch (error) {
